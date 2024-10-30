@@ -35,7 +35,7 @@ class Idle:
     def do(boy):
         boy.frame = (boy.frame + 1) % 8
 
-        if get_time() - boy.start_time > 5:
+        if get_time() - boy.start_time > 1:
             boy.state_machine.add_event(('TIME_OUT', 0))
     @staticmethod
     def draw(boy):
@@ -88,8 +88,10 @@ class Autorun:
 class Sleep:
     @staticmethod
     def enter(boy,e):
-        boy.action=3
-
+        if boy.action == 1 or boy.action == 3:
+            boy.action = 3
+        else:
+            boy.action = 2
     @staticmethod
     def exit(boy,e):
         pass
@@ -98,7 +100,10 @@ class Sleep:
         boy.frame = (boy.frame + 1) % 8
     @staticmethod
     def draw(boy):
-        boy.image.clip_composite_draw(boy.frame*100,300, boy.w, boy.h,3.141592/2, '', boy.x-25,boy.y-25,100,100)
+        if boy.action == 2:
+            boy.image.clip_composite_draw(boy.frame * 100, 200, boy.w, boy.h, -3.141592/2, '', boy.x+25,boy.y-25,100,100)
+        else:
+            boy.image.clip_composite_draw(boy.frame * 100, 300, boy.w, boy.h, 3.141592/2, '', boy.x-25,boy.y-25,100,100)
 
 class Run:
     @staticmethod
@@ -174,7 +179,8 @@ class Boy:
         #idle에서 time_out이면 sleep으로 sleep에서 space_down이면 idle로
         self.state_machine.set_transitions(
             {
-                Idle: {pressA: Autorun, right_down:Run, left_down:Run},
+                Sleep: {right_down:Run, left_down:Run, pressA: Autorun},
+                Idle: {pressA: Autorun, right_down:Run, left_down:Run, time_out:Sleep},
                 Run: {right_up:Idle, left_up:Idle},
                 Autorun: {time_out: Idle, right_down:Run, left_down:Run}
             })
