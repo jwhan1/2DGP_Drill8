@@ -6,22 +6,28 @@ def pressA(e):
     return e[0] == 'AUTORUN' and e[1].key == SDLK_a
 def time_out(e):
     return e[0] == 'TIME_OUT'
-
+def right_down(e):
+    return e[0] == 'KEY_DOWN' and e[1].key == SDLK_RIGHT
+def right_up(e):
+    return e[0] == 'KEY_UP' and e[1].key == SDLK_RIGHT
+def left_down(e):
+    return e[0] == 'KEY_DOWN' and e[1].key == SDLK_LEFT
+def left_up(e):
+    return e[0] == 'KEY_UP' and e[1].key == SDLK_LEFT
 class Idle:
     @staticmethod
     def enter(boy,e):
-        if pressA(e):
+        if start(e) or right_up(e):
             boy.action = 3
-
-
-        if start(e) or boy.dir == 0:
-            boy.action = 3
-        else :
+        elif left_up(e):
             boy.action = 2
-        boy.frame = 0
-        
+        elif time_out(e):
+            if boy.action == 1:
+                boy.action = 3
+            elif boy.action == 0:
+                boy.action = 2
+
         boy.start_time = get_time()
-        
     @staticmethod
     def exit(boy,e):
         pass
@@ -39,10 +45,12 @@ class Autorun:
     @staticmethod
     def enter(boy,e):
         if pressA(e):
-            if boy.dir == 0:
+            if boy.dir >= 0:
                 boy.action = 1
+                boy.dir = -3
             else :
                 boy.action = 0
+                boy.dir = 3
         boy.frame = 0
         boy.start_time = get_time()
     @staticmethod
@@ -53,10 +61,10 @@ class Autorun:
         boy.frame = (boy.frame + 1) % 8
 
         if boy.x >= 750:
-            boy.dir = 1
+            boy.dir = 3
             boy.action = 0
         elif boy.x <= 0:
-            boy.dir = 0
+            boy.dir = -3
             boy.action = 1
         #이동
         if boy.action == 1:#오른쪽으로
@@ -73,8 +81,42 @@ class Autorun:
     def draw(boy):
         boy.image.clip_draw(boy.frame * 100, boy.action * 100, 100, 100, boy.x, boy.y)
 
+class Sleep:
+    @staticmethod
+    def enter(boy,e):
+        boy.action=3
 
+    @staticmethod
+    def exit(boy,e):
+        pass
+    @staticmethod
+    def do(boy):
+        boy.frame = (boy.frame + 1) % 8
+    @staticmethod
+    def draw(boy):
+        boy.image.clip_composite_draw(boy.frame*100,300,100,100,3.141592/2, '', boy.x-25,boy.y-25,100,100)
 
+class Run:
+    @staticmethod
+    def enter(boy,e):
+        if right_down(e):
+            boy.action = 1#오른쪽으로
+            boy.dir = 1
+        elif left_down(e):
+            boy.action = 0#왼쪽으로
+            boy.dir = -1
+    @staticmethod
+    def exit(boy,e):
+        pass
+
+    @staticmethod
+    def do(boy):
+        boy.frame = (boy.frame + 1) % 8
+        if 0 < boy.x+boy.dir * 5 and boy.x+boy.dir * 5 < 750:
+            boy.x += boy.dir * 5
+    @staticmethod
+    def draw(boy):
+        boy.image.clip_draw(boy.frame*100,boy.action*100,100,100,boy.x,boy.y)
 
 class StateMachine:
     def __init__(self,o):
@@ -115,7 +157,7 @@ class Boy:
     def __init__(self):
         self.x, self.y = 400, 90 # 위치
         self.frame = 0 # 움직임
-        self.dir = 0 # 0:오른쪽, 1:왼쪽
+        self.dir = 0 # +:오른쪽, -:왼쪽
         self.action = 3 # 움직임
 
         self.image = load_image('animation_sheet.png')
@@ -126,9 +168,10 @@ class Boy:
         #idle에서 time_out이면 sleep으로 sleep에서 space_down이면 idle로
         self.state_machine.set_transitions(
             {
-                Idle: {pressA: Autorun},
-                Autorun: {time_out: Idle}
-                })
+                Idle: {pressA: Autorun, right_down:Run, left_down:Run},
+                Run: {right_up:Idle, left_up:Idle},
+                Autorun: {time_out: Idle, right_down:Run, left_down:Run}
+            })
     def update(self):
         self.state_machine.update()
         self.frame = (self.frame + 1) % 8
@@ -139,6 +182,15 @@ class Boy:
         #state machine event : (이벤트 종류, 큐)
         if event.type == SDL_KEYDOWN and event.key == SDLK_a:
             self.state_machine.add_event(('AUTORUN', event))
+        elif event.type == SDL_KEYUP and event.key == SDLK_RIGHT:
+            self.state_machine.add_event(('KEY_UP', event))
+        elif event.type == SDL_KEYDOWN and event.key == SDLK_RIGHT:
+            self.state_machine.add_event(('KEY_DOWN', event))
+        elif event.type == SDL_KEYUP and event.key == SDLK_LEFT:
+            self.state_machine.add_event(('KEY_UP', event))
+        elif event.type == SDL_KEYDOWN and event.key == SDLK_LEFT:
+            self.state_machine.add_event(('KEY_DOWN', event))
+
         pass
     def start(self):
         pass
