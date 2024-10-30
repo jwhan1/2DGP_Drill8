@@ -1,16 +1,20 @@
-from pico2d import load_image, get_time
+from pico2d import *
 
 def start(e):
     return e[0] == 'START'
 def pressA(e):
-    return e[0] == 'AUTORUN' and e[1].type == 'a'
+    return e[0] == 'AUTORUN' and e[1].key == SDLK_a
 def time_out(e):
     return e[0] == 'TIME_OUT'
 
 class Idle:
     @staticmethod
     def enter(boy,e):
-        if boy.dir == 0:
+        if pressA(e):
+            boy.action = 3
+
+
+        if start(e) or boy.dir == 0:
             boy.action = 3
         else :
             boy.action = 2
@@ -34,10 +38,11 @@ class Idle:
 class Autorun:
     @staticmethod
     def enter(boy,e):
-        if boy.dir == 0:
-            boy.action = 1
-        else :
-            boy.action = 0
+        if pressA(e):
+            if boy.dir == 0:
+                boy.action = 1
+            else :
+                boy.action = 0
         boy.frame = 0
         boy.start_time = get_time()
     @staticmethod
@@ -48,7 +53,6 @@ class Autorun:
         boy.frame = (boy.frame + 1) % 8
 
         if boy.x >= 750:
-            print(boy.x)
             boy.dir = 1
             boy.action = 0
         elif boy.x <= 0:
@@ -61,6 +65,7 @@ class Autorun:
             boy.x = boy.x - 10
             
         if get_time() - boy.start_time > 5:#5초 후 정지
+            print(boy.x)
             boy.state_machine.add_event(('TIME_OUT', 0))
 
 
@@ -92,14 +97,16 @@ class StateMachine:
         self.cur_state.do(self.o) 
         #이벤트 발생 시 상태 변환
         if self.event_que:
-            e = self.event_que.pop(0)#리스트의 첫번째 요소 꺼냄
-            for check_event, next_state, in self.transitions(self.cur_state.items()):
+            e = self.event_que.pop(0)#이벤트가 있으면 리스트의 첫번째 요소 꺼냄
+            
+            for check_event, next_state, in self.transitions[self.cur_state].items():
+                
                 if check_event(e):
                     print(f'exit from{self.cur_state}')
-                    self.cur_state.exit(self.o)
+                    self.cur_state.exit(self.o,e)
                     self.cur_state = next_state
                     print(f'enter to{self.cur_state}')
-                    self.cur_state.enter(self.o)
+                    self.cur_state.enter(self.o,e)
 
     def draw(self):
         self.cur_state.draw(self.o)
@@ -114,7 +121,7 @@ class Boy:
         self.image = load_image('animation_sheet.png')
         self.state_machine = StateMachine(self) # 소년 객체를 위한 상태 머신인지 알려줄 필요
 
-        self.state_machine.start(Autorun) # 첫 상태 집어넣기
+        self.state_machine.start(Idle) # 첫 상태 집어넣기
 
         #idle에서 time_out이면 sleep으로 sleep에서 space_down이면 idle로
         self.state_machine.set_transitions(
@@ -130,7 +137,8 @@ class Boy:
     def handle_event(self, event):
         #input event
         #state machine event : (이벤트 종류, 큐)
-        self.state_machine.add_event(('INPUT', event))
+        if event.type == SDL_KEYDOWN and event.key == SDLK_a:
+            self.state_machine.add_event(('AUTORUN', event))
         pass
     def start(self):
         pass
