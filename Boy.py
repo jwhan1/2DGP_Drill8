@@ -39,7 +39,7 @@ class Idle:
             boy.state_machine.add_event(('TIME_OUT', 0))
     @staticmethod
     def draw(boy):
-            boy.image.clip_draw(boy.frame * 100, boy.action * 100, 100, 100, boy.x, boy.y)
+            boy.image.clip_draw(boy.frame * 100, boy.action * 100, boy.w, boy.h, boy.x, boy.y)
 
 class Autorun:
     @staticmethod
@@ -59,11 +59,11 @@ class Autorun:
     @staticmethod
     def do(boy):#벽을 만나면 방향전환
         boy.frame = (boy.frame + 1) % 8
-
-        if boy.x >= 750:
+        # 벽 충돌
+        if boy.x >= 800 - (boy.w / 2):
             boy.dir = 3
             boy.action = 0
-        elif boy.x <= 0:
+        elif boy.x <= boy.w / 2:
             boy.dir = -3
             boy.action = 1
         #이동
@@ -71,15 +71,19 @@ class Autorun:
             boy.x = boy.x + 10
         else:
             boy.x = boy.x - 10
-            
+        #정지
         if get_time() - boy.start_time > 5:#5초 후 정지
-            print(boy.x)
+            boy.w = 100
+            boy.h = 100
             boy.state_machine.add_event(('TIME_OUT', 0))
+        else:
+            boy.w = boy.w + 1
+            boy.h = boy.h + 1
 
 
     @staticmethod
     def draw(boy):
-        boy.image.clip_draw(boy.frame * 100, boy.action * 100, 100, 100, boy.x, boy.y)
+        boy.image.clip_composite_draw(boy.frame * 100,boy.action * 100, 100, 100, 0, '', boy.x, boy.y + (boy.h - 100) / 3, boy.w, boy.h)
 
 class Sleep:
     @staticmethod
@@ -94,7 +98,7 @@ class Sleep:
         boy.frame = (boy.frame + 1) % 8
     @staticmethod
     def draw(boy):
-        boy.image.clip_composite_draw(boy.frame*100,300,100,100,3.141592/2, '', boy.x-25,boy.y-25,100,100)
+        boy.image.clip_composite_draw(boy.frame*100,300, boy.w, boy.h,3.141592/2, '', boy.x-25,boy.y-25,100,100)
 
 class Run:
     @staticmethod
@@ -112,11 +116,11 @@ class Run:
     @staticmethod
     def do(boy):
         boy.frame = (boy.frame + 1) % 8
-        if 0 < boy.x+boy.dir * 5 and boy.x+boy.dir * 5 < 750:
+        if 0 < boy.x + boy.dir * 5 and boy.x + boy.dir * 5 < 750:
             boy.x += boy.dir * 5
     @staticmethod
     def draw(boy):
-        boy.image.clip_draw(boy.frame*100,boy.action*100,100,100,boy.x,boy.y)
+        boy.image.clip_draw(boy.frame*100,boy.action*100, boy.w, boy.h,boy.x,boy.y)
 
 class StateMachine:
     def __init__(self,o):
@@ -159,6 +163,8 @@ class Boy:
         self.frame = 0 # 움직임
         self.dir = 0 # +:오른쪽, -:왼쪽
         self.action = 3 # 움직임
+        self.w = 100 # 너비
+        self.h = 100 # 높이
 
         self.image = load_image('animation_sheet.png')
         self.state_machine = StateMachine(self) # 소년 객체를 위한 상태 머신인지 알려줄 필요
