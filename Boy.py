@@ -7,38 +7,69 @@ def pressA(e):
 def time_out(e):
     return e[0] == 'TIME_OUT'
 
-class Boy:
-    def __init__(self):
-        self.x, self.y = 400, 90
-        self.frame = 0
-        self.dir = 0
-        self.action = 3
-
-        self.image = load_image('Labs/Lecture10_Character_Controller_1/animation_sheet.png')
-        self.state_machine = StateMachine(self) # 소년 객체를 위한 상태 머신인지 알려줄 필요
-
-        self.state_machine.start(Idle) # 첫 상태 집어넣기
-
-        #idle에서 time_out이면 sleep으로 sleep에서 space_down이면 idle로
-        self.state_machine.set_transitions(
-            {
-                Idle: {pressA: Autorun},
-                Autorun: {time_out: Idle}
-                })
-    def update(self):
-        self.state_machine.update()
-        self.frame = (self.frame + 1) % 8
-    def draw(self):
-        self.state_machine.draw()
-    def handle_event(self, event):
-        #input event
-        #state machine event : (이벤트 종류, 큐)
-        self.state_machine.add_event(('INPUT', event))
+class Idle:
+    @staticmethod
+    def enter(boy,e):
+        if boy.dir == 0:
+            boy.action = 3
+        else :
+            boy.action = 2
+        boy.frame = 0
+        
+        boy.start_time = get_time()
+        
+    @staticmethod
+    def exit(boy,e):
         pass
-    def start(self):
+    @staticmethod
+    def do(boy):
+        boy.frame = (boy.frame + 1) % 8
+
+        if get_time() - boy.start_time > 5:
+            boy.state_machine.add_event(('TIME_OUT', 0))
+    @staticmethod
+    def draw(boy):
+            boy.image.clip_draw(boy.frame * 100, boy.action * 100, 100, 100, boy.x, boy.y)
+
+class Autorun:
+    @staticmethod
+    def enter(boy,e):
+        if boy.dir == 0:
+            boy.action = 1
+        else :
+            boy.action = 0
+        boy.frame = 0
+        boy.start_time = get_time()
+    @staticmethod
+    def exit(boy,e):
         pass
-    def state(self):
-        pass
+    @staticmethod
+    def do(boy):#벽을 만나면 방향전환
+        boy.frame = (boy.frame + 1) % 8
+
+        if boy.x >= 750:
+            print(boy.x)
+            boy.dir = 1
+            boy.action = 0
+        elif boy.x <= 0:
+            boy.dir = 0
+            boy.action = 1
+        #이동
+        if boy.action == 1:#오른쪽으로
+            boy.x = boy.x + 10
+        else:
+            boy.x = boy.x - 10
+            
+        if get_time() - boy.start_time > 5:#5초 후 정지
+            boy.state_machine.add_event(('TIME_OUT', 0))
+
+
+    @staticmethod
+    def draw(boy):
+        boy.image.clip_draw(boy.frame * 100, boy.action * 100, 100, 100, boy.x, boy.y)
+
+
+
 
 class StateMachine:
     def __init__(self,o):
@@ -61,7 +92,7 @@ class StateMachine:
         self.cur_state.do(self.o) 
         #이벤트 발생 시 상태 변환
         if self.event_que:
-            e = self.event_que.pop[0]#리스트의 첫번째 요소 꺼냄
+            e = self.event_que.pop(0)#리스트의 첫번째 요소 꺼냄
             for check_event, next_state, in self.transitions(self.cur_state.items()):
                 if check_event(e):
                     print(f'exit from{self.cur_state}')
@@ -70,26 +101,38 @@ class StateMachine:
                     print(f'enter to{self.cur_state}')
                     self.cur_state.enter(self.o)
 
-class Idle:
-    @staticmethod
-    def enter(boy,e):
-        boy.action = 3
-        boy.frame = 0
-        boy.dir = 0
-        boy.start_time = get_time()
-        
-    @staticmethod
-    def exit(boy,e):
+    def draw(self):
+        self.cur_state.draw(self.o)
+
+class Boy:
+    def __init__(self):
+        self.x, self.y = 400, 90 # 위치
+        self.frame = 0 # 움직임
+        self.dir = 0 # 0:오른쪽, 1:왼쪽
+        self.action = 3 # 움직임
+
+        self.image = load_image('animation_sheet.png')
+        self.state_machine = StateMachine(self) # 소년 객체를 위한 상태 머신인지 알려줄 필요
+
+        self.state_machine.start(Autorun) # 첫 상태 집어넣기
+
+        #idle에서 time_out이면 sleep으로 sleep에서 space_down이면 idle로
+        self.state_machine.set_transitions(
+            {
+                Idle: {pressA: Autorun},
+                Autorun: {time_out: Idle}
+                })
+    def update(self):
+        self.state_machine.update()
+        self.frame = (self.frame + 1) % 8
+    def draw(self):
+        self.state_machine.draw()
+    def handle_event(self, event):
+        #input event
+        #state machine event : (이벤트 종류, 큐)
+        self.state_machine.add_event(('INPUT', event))
         pass
-    @staticmethod
-    def do(boy):
-        boy.frame = (boy.frame + 1) % 8
-
-        if get_time() - boy.start_time > 5:
-            boy.state_machine.add_event(('TIME_OUT', 0))
-    @staticmethod
-    def draw(boy):
-            boy.image.clip_draw(boy.frame * 100, boy.action * 100, 100, 100, boy.x, boy.y)
-
-class Autorun:
-    pass
+    def start(self):
+        pass
+    def state(self):
+        pass

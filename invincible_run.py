@@ -2,7 +2,7 @@ from pico2d import *
 import random
 
 from Boy import Boy
-
+from Grass import Grass
 
 def handle_events():
     global running
@@ -13,7 +13,7 @@ def handle_events():
             running = False
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
             running = False
-        elif event.type == SDLK_LEFT or event.type == SDLK_RIGHT or event.type == SDLK_KP_ENTER:
+        elif event.type == SDL_KEYDOWN and event.type == SDLK_a:
             boy.handle_event(event)
 
 
@@ -34,13 +34,10 @@ def reset_world():
     grass = Grass()
     world.append(grass)
 
-
-
 def update_world():
     for o in world:
         o.update()
     pass
-
 
 def render_world():
     clear_canvas()

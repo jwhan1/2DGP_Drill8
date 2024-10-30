@@ -7,7 +7,7 @@ from pico2d import load_image
 
 class Grass:
     def __init__(self):
-        self.image = load_image('Labs/Lecture10_Character_Controller_1/grass.png')
+        self.image = load_image('grass.png')
 
     def draw(self):
         self.image.draw(400, 30)
